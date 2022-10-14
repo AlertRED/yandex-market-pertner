@@ -1,0 +1,7 @@
+__pycache__
+.vscode
+codes
+logs
+venv
+store_info.yml
+settings.ini
