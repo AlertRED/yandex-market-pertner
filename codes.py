@@ -3,7 +3,6 @@ import logging
 import requests
 import datetime
 from time import sleep
-from email import header
 from pathlib import Path
 from pprint import pprint
 from config import config
