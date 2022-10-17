@@ -44,7 +44,7 @@ class Codes:
 
     async def next(self, count):
         while self.__blocked:
-            aisleep(1)
+            await aisleep(1)
         if len(self.file_cache) == 0:
             raise StopIteration
         elif len(self.file_cache) - count < 0:
@@ -76,9 +76,9 @@ class CodeSender:
     URL = 'https://api.partner.market.yandex.ru/v2/campaigns/{compaign_id}/orders/{order_id}/deliverDigitalGoods.json'
     TRIES = 3
     DELAY_SEND_TIME = 2
-    COMPAING_ID = config.get('main', 'compaing_id')
-    OAUTH_CLIENT_ID = config.get('main', 'oauth_client_id')
-    OAUTH_TOKEN = config.get('main', 'oauth_token')
+    COMPAING_ID = config.get('keys', 'compaing_id')
+    OAUTH_CLIENT_ID = config.get('keys', 'oauth_client_id')
+    OAUTH_TOKEN = config.get('keys', 'oauth_token')
 
     def __init__(self, codes: dict) -> None:
         self.__codes = codes

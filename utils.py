@@ -8,7 +8,7 @@ main_log = logging.getLogger('mainlog')
 def get_products():
     """ Вернуть товары магазина из yaml файла
     """
-    store_filename = config.get('main', 'store_filename')
+    store_filename = config.get('settings', 'store_filename')
     with open(store_filename) as file:
         xml_text = file.read()
     offers = xmltodict.parse(
@@ -25,7 +25,7 @@ def auth_required(func):
     @wraps(func)
     async def check_auth(*args, **kwargs):
         auth_token = kwargs['request'].query_params.get('auth-token')
-        if not auth_token == config.get('main', 'auth_token'):
+        if not auth_token == config.get('keys', 'auth_token'):
             message_error = 'Токен авторизации не подходит.'
             main_log.warning(message_error)
             raise Exception(message_error)

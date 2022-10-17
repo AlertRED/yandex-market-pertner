@@ -77,7 +77,7 @@ async def order_accept(request: Request, background_tasks: BackgroundTasks):
             for item in data['order']['items']
         ]
         main_log.info(f'Данные из запроса успешно получены.')
-        background_tasks.add_task(await code_sender.send_code, products, order_id)
+        background_tasks.add_task(code_sender.send_code, products, order_id)
         main_log.info(f'Отправка кода запущена.')
         return result
     except:
@@ -88,7 +88,7 @@ async def order_accept(request: Request, background_tasks: BackgroundTasks):
 async def cart(request: Request):
     return {}
 
-if config.get('main', 'is_debug') != 'true':
+if config.get('settings', 'is_debug') != 'true':
     @app.post('/cart')
     @auth_required
     async def cart(request: Request):     
@@ -103,7 +103,7 @@ if config.get('main', 'is_debug') != 'true':
                     'offerId': item['offerId'],
                     'delivery': True,
                     'count': 999,
-                    'sellerInn': config.get('main', 'seller_inn'),
+                    'sellerInn': config.get('keys', 'seller_inn'),
                 })
             result =  {
                 'cart': {
@@ -157,7 +157,7 @@ else:
                 'offerId': item['offerId'],
                 'delivery': True,
                 'count': 999,
-                'sellerInn': config.get('main', 'seller_inn'),
+                'sellerInn': config.get('keys', 'seller_inn'),
             })
         return {
             "cart":
