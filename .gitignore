@@ -5,3 +5,6 @@ logs
 venv
 store_info.yml
 settings.ini
+nohup.err
+nohup.out
+nohup
