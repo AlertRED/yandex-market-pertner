@@ -11,12 +11,6 @@ from asyncio import sleep as aisleep
 main_log = logging.getLogger('mainlog')
 
 
-TYPE_TO = {
-    'PS': 'ps',
-    'XBOX': 'xbox',
-}
-
-
 class CodesException(Exception):
     pass
 
@@ -44,7 +38,7 @@ class Codes:
     async def next(self, count):
         while self.__blocked:
             await aisleep(1)
-        if len(self.file_cache) == 0:
+        if not len(self.file_cache):
             raise StopIteration
         elif len(self.file_cache) - count < 0:
             raise CodesException(
