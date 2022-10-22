@@ -1,7 +1,9 @@
 import logging
+import traceback
 import xmltodict
 from config import config
 from functools import wraps
+from fastapi import status, HTTPException
 
 main_log = logging.getLogger('mainlog')
 
@@ -31,3 +33,17 @@ def auth_required(func):
             raise Exception(message_error)
         return await func(*args, **kwargs)
     return check_auth
+
+def catch_internal_error(func):
+    @wraps(func)
+    async def check_error(*args, **kwargs):
+        try:
+            result = await func(*args, **kwargs)
+        except:
+            main_log.critical(f'{traceback.print_exc()}')
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Внутренняя ошибка',
+            )
+        return result
+    return check_error

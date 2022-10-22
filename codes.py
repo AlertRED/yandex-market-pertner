@@ -15,10 +15,6 @@ class CodesException(Exception):
     pass
 
 
-class PipeBlocked(CodesException):
-    pass
-
-
 class Codes:
     """ Класс работы с файлом кодов
     """
@@ -26,14 +22,19 @@ class Codes:
 
     def __init__(self, codes_filename: str, codes_sended_filename: str) -> None:
         self.__blocked = False
+        self.__codes_filename = codes_filename
+        self.__codes_sended_filename = codes_sended_filename
         self.__codes_file_path = self.CODES_FOLDER_PATH.joinpath(
             codes_filename)
         self.__codes_sended_file_path = self.CODES_FOLDER_PATH.joinpath(
             codes_sended_filename)
         with open(self.__codes_file_path, 'r') as file:
-            self.file_cache: list = file.read().splitlines(True)
+            self.file_cache: list = [line.rstrip('\n') for line in file]
         self.total_count_codes = len(self.file_cache)
         self.__count_getted = None
+    
+    def __repr__(self):
+        return self.__codes_filename
 
     async def next(self, count):
         while self.__blocked:
@@ -132,19 +133,17 @@ class CodeSender:
         self.__restore_keys(products)
         return False
 
-
-codes = {
-    'Forza Horizon 5 - PS': Codes(
-        codes_filename='ps_codes.txt',
-        codes_sended_filename='ps_codes_sended.txt',
-    ),
-    'xbox': Codes(
-        codes_filename='xbox_codes.txt',
-        codes_sended_filename='xbox_codes_sended.txt',
-    ),
-}
+codes = {}
+for key in list(config['files_with_keys'].keys()):
+    filename = config.get('files_with_keys', key).strip()
+    codes[key] = Codes(
+        codes_filename= filename,
+        codes_sended_filename='(sended) ' + filename,
+    )
 
 code_sender = CodeSender(codes=codes)
+main_log.info(codes)
+
 
 if __name__ == '__main__':
     code_sender.send_code(
