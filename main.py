@@ -42,10 +42,10 @@ def sync_yaml():
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.132 YaBrowser/22.3.1.922 Yowser/2.5 Safari/537.36',
     }
     with open(config.get('settings', 'store_filename'), 'r') as file:
-        last_hash = sha224(file.readline().encode()).hexdigest()
+        last_hash = sha224(file.readlines().encode()).hexdigest()
 
     while True:
-        main_log.info('Обновление yml файла.')
+        main_log.info('Проверка обновления yml файла.')
         url_yaml_products = config.get('settings', 'url_yaml_products')
         response = requests.get(url_yaml_products, headers=headers)
         if response.status_code == status.HTTP_200_OK:
@@ -70,7 +70,7 @@ def send_products_to_yandex():
 
     while True:
         try:
-            main_log.info('Обновление товаров на площадке yandex.')
+            main_log.info('Синхронизация товаров на yandex площадке.')
             with open(config.get('settings', 'store_filename'), 'r') as file:
                 current_hash = sha224(file.readline().encode()).hexdigest()
             if current_hash != last_hash:
