@@ -1,15 +1,21 @@
+from hashlib import sha224
 import logging
+import asyncio
 import datetime
+import traceback
+import requests
 import subprocess
-from config import config
+from config import add_config_meta, config
 from codes import code_sender
 from starlette.requests import Request
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, status
+from load_products import update_info_for_yandex
 
 from utils import auth_required, catch_internal_error, get_products
 
 app = FastAPI()
 main_log = logging.getLogger('mainlog')
+loop = asyncio.get_event_loop()
 last_update_date_time = subprocess.run('stat -c %Y .git/FETCH_HEAD'.split(), capture_output=True)
 try:
     dt = datetime.datetime.fromtimestamp(int(last_update_date_time.stdout[:-1]))
@@ -29,11 +35,66 @@ async def ping():
     }
 
 
+@asyncio.coroutine
+def sync_yaml():
+    SLEEP_TIME = 60
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.132 YaBrowser/22.3.1.922 Yowser/2.5 Safari/537.36',
+    }
+    with open(config.get('settings', 'store_filename'), 'r') as file:
+        last_hash = sha224(file.readline().encode()).hexdigest()
+
+    while True:
+        main_log.info('Обновление yml файла.')
+        url_yaml_products = config.get('settings', 'url_yaml_products')
+        response = requests.get(url_yaml_products, headers=headers)
+        if response.status_code == status.HTTP_200_OK:
+            current_hash = sha224(response.text.encode()).hexdigest()
+            if last_hash != current_hash:
+                with open(config.get('settings', 'store_filename'), 'w') as file:
+                    file.write(response.text)
+                last_hash = current_hash
+                main_log.info(f'Обнаружено изменение между данными. Файл обновлен.')
+            else:
+                main_log.info(f'Изменений не обнаружено.')
+        else:
+            main_log.info(f'Код ответа при загрузке файла: {response.status_code}')
+            main_log.info(f'Содержание ответа: {response.text}')
+        yield from asyncio.sleep(SLEEP_TIME)
+
+
+@asyncio.coroutine
+def send_products_to_yandex():
+    SLEEP_TIME = 60
+    last_hash = config.get('meta', 'last_hash_yaml')
+
+    while True:
+        try:
+            main_log.info('Обновление товаров на площадке yandex.')
+            with open(config.get('settings', 'store_filename'), 'r') as file:
+                current_hash = sha224(file.readline().encode()).hexdigest()
+            if current_hash != last_hash:
+                main_log.info('Обнаружены изменения в файле. Идет загрузка...')
+                last_hash = current_hash
+                add_config_meta('last_hash_yaml', last_hash)
+                update_info_for_yandex()
+                main_log.info('Данные успешно загружены.')
+            else:
+                main_log.info('Изменений в файле не обнаружено.')
+        except:
+            main_log.critical(f'При обновлении товаров на yandex произошла ошибка.')
+            main_log.critical(f'{traceback.print_exc()}')
+        yield from asyncio.sleep(SLEEP_TIME)
+
+task1 = loop.create_task(sync_yaml())
+task2 = loop.create_task(send_products_to_yandex())
+
+
 @app.post('/stocks')
 @auth_required
 @catch_internal_error
 async def stocks(request: Request):
-    main_log.info(f'Получен запрос синхронизацию количества товара')
+    main_log.info(f'Получен запрос синхронизации количества товара')
     data = await request.json()
     warehouse_id = data['warehouseId']
     dt = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
