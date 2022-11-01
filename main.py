@@ -42,7 +42,7 @@ def sync_yaml():
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.132 YaBrowser/22.3.1.922 Yowser/2.5 Safari/537.36',
     }
     with open(config.get('settings', 'store_filename'), 'r') as file:
-        last_hash = sha224(file.readlines().encode()).hexdigest()
+        last_hash = sha224(file.read().encode()).hexdigest()
 
     while True:
         main_log.info('Проверка обновления yml файла.')
