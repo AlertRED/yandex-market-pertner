@@ -1,12 +1,12 @@
-from fastapi import FastAPI, Request, Response
+import aiohttp
 from datetime import datetime
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 
-from config import MARKET_SELLER_INN
+import config
 
 
 app = FastAPI()
-
-sellerInn: str = MARKET_SELLER_INN
 
 
 @app.get('/products.yml')
@@ -47,7 +47,7 @@ async def cart(request: Request):
         _item['offerId'] = item['offerId']
         _item['delivery'] = True
         _item['count'] = item['count']
-        _item['sellerInn'] = sellerInn
+        _item['sellerInn'] = config.MARKET_SELLER_INN
         response['cart']['items'].append(_item)
 
     response['cart']['paymentMethods'] = [
@@ -59,4 +59,18 @@ async def cart(request: Request):
         'SBP',
     ]
 
-    return response
+    return JSONResponse(response)
+
+
+@app.post('/order/accept')
+async def order_accept(request: Request):
+    json_data = await request.json()
+
+    response = {'order': {}}
+    response['order']['accepted'] = True
+    response['order']['id'] = json_data['order']['id']
+    response['order']['shipmentDate'] = datetime.today().strftime('%d-%m-%Y')
+
+    return JSONResponse(response)
+
+
