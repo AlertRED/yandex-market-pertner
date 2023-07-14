@@ -135,3 +135,25 @@ async def stocks(request: Request):
         response['skus'].append(sku)
 
     return JSONResponse(response)
+
+
+@app.post('/order/cancellation/notify')
+async def buyer_cancellation(request: Request):
+    json_data = await request.json()
+    request_data = {
+        'accepted': False,
+        'reason': 'ORDER_DELIVERED',
+    }
+    headers = {'Authorization': f'Bearer {config.MARKET_ACCESS_TOKEN}'}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.put(
+            url=(
+                f'https://api.partner.market.yandex.ru'
+                f'/campaigns/{config.MARKET_CAMPAIGN_ID}'
+                f'/orders/{json_data["order"]["id"]}'
+                f'/cancellation/accept'
+            ),
+            json=request_data,
+        ) as resp:
+            print(resp.status)
+            print(await resp.text())
