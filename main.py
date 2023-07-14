@@ -110,3 +110,28 @@ async def order_status(request: Request):
             ) as resp:
                 print(resp.status)
                 print(await resp.text())
+
+
+@app.post('/stocks')
+async def stocks(request: Request):
+    ITEM_TYPE = 'FIT'
+    COUNT_PRODUCTS = 999
+
+    json_data = await request.json()
+    response = {'skus': []}
+
+    for sku_name in json_data['skus']:
+        sku = {}
+        sku['sku'] = sku_name
+        sku['warehouseId'] = json_data['warehouseId']
+
+        item = {}
+        item['count'] = COUNT_PRODUCTS
+        item['type'] = ITEM_TYPE
+        item['updatedAt'] = (
+            datetime.now().astimezone().replace(microsecond=0).isoformat()
+        )
+        sku['items'] = [item]
+        response['skus'].append(sku)
+
+    return JSONResponse(response)
