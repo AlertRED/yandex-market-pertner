@@ -1,5 +1,6 @@
+import uuid
 import aiohttp
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
@@ -74,3 +75,38 @@ async def order_accept(request: Request):
     return JSONResponse(response)
 
 
+@app.post('/order/status')
+async def order_status(request: Request):
+    STATUS_FOR_SEND_ORDER = 'PROCESSING'
+
+    json_data = await request.json()
+    status = json_data['order']['status']
+
+    request_data = {'items': []}
+    for item in json_data['order']['items']:
+        for _ in range(item['count']):
+            _item = {}
+            _item['id'] = item['id']
+            _item['code'] = str(uuid.uuid4())
+            _item['slip'] = (
+                f'Instruction for {item["id"]}'
+            )
+            _item['activate_till'] = (
+                (datetime.today() + timedelta(weeks=2)).strftime('%Y-%m-%d')
+            )
+            request_data['items'].append(_item)
+
+    if status == STATUS_FOR_SEND_ORDER:
+        headers = {'Authorization': f'Bearer {config.MARKET_ACCESS_TOKEN}'}
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.post(
+                url=(
+                    f'https://api.partner.market.yandex.ru'
+                    f'/campaigns/{config.MARKET_CAMPAIGN_ID}'
+                    f'/orders/{json_data["order"]["id"]}'
+                    f'/deliverDigitalGoods'
+                ),
+                json=request_data,
+            ) as resp:
+                print(resp.status)
+                print(await resp.text())
