@@ -1,5 +1,7 @@
 __pycache__
 .vscode
 /venv
+.pytest_cache
 products.yml
 config.py
+token.json
