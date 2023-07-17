@@ -1,10 +1,10 @@
-import uuid
 import aiohttp
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 import config
+import key_data
 
 
 app = FastAPI()
@@ -84,10 +84,11 @@ async def order_status(request: Request):
 
     request_data = {'items': []}
     for item in json_data['order']['items']:
-        for _ in range(item['count']):
+        keys = key_data.get_keys(item['offerId'], item['count'])
+        for key in keys:
             _item = {}
             _item['id'] = item['id']
-            _item['code'] = str(uuid.uuid4())
+            _item['code'] = key
             _item['slip'] = (
                 f'Instruction for {item["id"]}'
             )
@@ -115,7 +116,7 @@ async def order_status(request: Request):
 @app.post('/stocks')
 async def stocks(request: Request):
     ITEM_TYPE = 'FIT'
-    COUNT_PRODUCTS = 999
+    count_products = key_data.get_count_keys()
 
     json_data = await request.json()
     response = {'skus': []}
@@ -126,7 +127,7 @@ async def stocks(request: Request):
         sku['warehouseId'] = json_data['warehouseId']
 
         item = {}
-        item['count'] = COUNT_PRODUCTS
+        item['count'] = count_products.get(sku_name, 0)
         item['type'] = ITEM_TYPE
         item['updatedAt'] = (
             datetime.now().astimezone().replace(microsecond=0).isoformat()
