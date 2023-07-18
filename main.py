@@ -1,3 +1,5 @@
+import logging.config
+import uvicorn
 import aiohttp
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response
@@ -8,12 +10,14 @@ import key_data
 
 
 app = FastAPI()
+logger = None
 
 
 @app.get('/products.yml')
 async def pruducts_yml(request: Request):
     with open('./products.yml', 'r') as file:
         yml_data = file.read()
+    logger.info('1')
     return Response(content=yml_data, media_type="application/xml")
 
 
@@ -156,5 +160,14 @@ async def buyer_cancellation(request: Request):
             ),
             json=request_data,
         ) as resp:
-            print(resp.status)
-            print(await resp.text())
+            logger.info(
+                {
+                    'status': resp.status,
+                    'text': await resp.text(),
+                },
+            )
+
+
+if __name__ == '__main__':
+    logger = logging.getLogger('yandex_market')
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_config='logging.yaml')

@@ -1,0 +1,61 @@
+version: 1
+disable_existing_loggers: no
+
+formatters:
+  standart:
+    format: '%(asctime)s - %(levelname)s - %(message)s'
+  verbose:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s"
+  error:
+    format: "%(levelname)s <PID %(process)d:%(processName)s> %(name)s.%(funcName)s(): %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standart
+    stream: ext://sys.stdout
+  file_uvicorn:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: standart
+    when: D
+    backupCount: 0
+    filename: ./logs/uvicorn.log
+    encoding: utf8
+  yandex_market_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: standart
+    when: D
+    backupCount: 0
+    filename: ./logs/yandex_market.log
+    encoding: utf8
+  google_sheets_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: standart
+    when: D
+    backupCount: 0
+    filename: ./logs/google_sheets.log
+    encoding: utf8
+
+loggers:
+    root:
+        level: DEBUG
+        handlers: [console]
+    uvicorn:
+        level: INFO
+        handlers: [file_uvicorn]
+        propagate: yes
+        qualname: uvicorn
+    yandex_market:
+        level: INFO
+        handlers: [yandex_market_file]
+        propagate: no
+        qualname: yandex_market
+    google_sheets:
+        level: INFO
+        handlers: [google_sheets_file]
+        propagate: yes
+        qualname: google_sheets
