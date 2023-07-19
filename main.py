@@ -1,8 +1,9 @@
+import asyncio
 import logging.config
 import uvicorn
 import aiohttp
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 
 import config
@@ -10,14 +11,13 @@ import key_data
 
 
 app = FastAPI()
-logger = None
+logger = logging.getLogger('yandex_market')
 
 
 @app.get('/products.yml')
 async def pruducts_yml(request: Request):
     with open('./products.yml', 'r') as file:
         yml_data = file.read()
-    logger.info('1')
     return Response(content=yml_data, media_type="application/xml")
 
 
@@ -79,42 +79,48 @@ async def order_accept(request: Request):
     return JSONResponse(response)
 
 
-@app.post('/order/status')
+@app.post('/order/status', status_code=status.HTTP_200_OK)
 async def order_status(request: Request):
     STATUS_FOR_SEND_ORDER = 'PROCESSING'
 
     json_data = await request.json()
     status = json_data['order']['status']
-
-    request_data = {'items': []}
-    for item in json_data['order']['items']:
-        keys = key_data.get_keys(item['offerId'], item['count'])
-        for key in keys:
-            _item = {}
-            _item['id'] = item['id']
-            _item['code'] = key
-            _item['slip'] = (
-                f'Instruction for {item["id"]}'
-            )
-            _item['activate_till'] = (
-                (datetime.today() + timedelta(weeks=2)).strftime('%Y-%m-%d')
-            )
-            request_data['items'].append(_item)
-
+    logger.info(f'Заказ {json_data["order"]["id"]} переведен в статус {status}')
     if status == STATUS_FOR_SEND_ORDER:
-        headers = {'Authorization': f'Bearer {config.MARKET_ACCESS_TOKEN}'}
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.post(
-                url=(
-                    f'https://api.partner.market.yandex.ru'
-                    f'/campaigns/{config.MARKET_CAMPAIGN_ID}'
-                    f'/orders/{json_data["order"]["id"]}'
-                    f'/deliverDigitalGoods'
-                ),
-                json=request_data,
-            ) as resp:
-                print(resp.status)
-                print(await resp.text())
+        request_data = {'items': []}
+        for item in json_data['order']['items']:
+            keys = key_data.get_keys(item['offerId'], item['count'])
+            for key in keys:
+                _item = {}
+                _item['id'] = item['id']
+                _item['code'] = key
+                _item['slip'] = (
+                    f'Instruction for {item["id"]}'
+                )
+                _item['activate_till'] = (
+                    (datetime.today() + timedelta(weeks=2)).strftime('%Y-%m-%d')
+                )
+                request_data['items'].append(_item)
+        await send_key(json_data["order"]["id"], request_data)
+
+
+async def send_key(order_id: str, request_data):
+    headers = {'Authorization': f'Bearer {config.MARKET_ACCESS_TOKEN}'}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.post(
+            url=(
+                f'https://api.partner.market.yandex.ru'
+                f'/campaigns/{config.MARKET_CAMPAIGN_ID}'
+                f'/orders/{order_id}'
+                f'/deliverDigitalGoods'
+            ),
+            json=request_data,
+        ) as resp:
+            info = {
+                'status': resp.status,
+                'text': await resp.text(),
+            }
+            logger.info(f'Заказ {order_id} ключ отправлен {info}')
 
 
 @app.post('/stocks')
@@ -160,14 +166,21 @@ async def buyer_cancellation(request: Request):
             ),
             json=request_data,
         ) as resp:
+            info = {
+                'status': resp.status,
+                'text': await resp.text(),
+            }
             logger.info(
-                {
-                    'status': resp.status,
-                    'text': await resp.text(),
-                },
+                f'Заказ {json_data["order"]["id"]}'
+                f'отмена заказа отменена {info}'
             )
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger('yandex_market')
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_config='logging.yaml')
+    uvicorn.run(
+        'main:app',
+        host='127.0.0.1',
+        port=8000,
+        log_config='logging.yaml',
+        reload=True,
+    )
