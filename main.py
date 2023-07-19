@@ -1,4 +1,3 @@
-import asyncio
 import logging.config
 import uvicorn
 import aiohttp
