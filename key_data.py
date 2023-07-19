@@ -30,7 +30,7 @@ def __get_skus_from_sheet() -> list:
     creds = __get_creds()
     headers_sku = {}
     try:
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         sheet = service.spreadsheets()
         result = (
             sheet.values()
@@ -56,13 +56,13 @@ def __get_skus_from_sheet() -> list:
 def __update_keys_columns(data: list, column_name: str):
     creds = __get_creds()
     try:
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         sheet = service.spreadsheets()
         response = (
             sheet.values()
             .update(
                 spreadsheetId=GOOGLE_SPREADSHEET_ID,
-                range=f'keys!{column_name}3:{column_name}999',
+                range=f'keys!{column_name}3:{column_name}',
                 valueInputOption='USER_ENTERED',
                 body={'values': [[i] for i in data]},
             )
@@ -76,7 +76,7 @@ def __update_keys_columns(data: list, column_name: str):
 def __add_used_keys_columns(keys: List[str], sku: str):
     creds = __get_creds()
     try:
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         sheet = service.spreadsheets()
         tz = timezone('Europe/Moscow')
         current_dt = datetime.now(tz).strftime('%Y-%m-%d %H:%M')
@@ -98,7 +98,7 @@ def __add_used_keys_columns(keys: List[str], sku: str):
 def __get_keys_from_product(column_name: str) -> list:
     creds = __get_creds()
     try:
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         sheet = service.spreadsheets()
         result = (
             sheet.values()
@@ -146,7 +146,7 @@ def get_count_keys() -> Dict:
     counter = {}
     creds = __get_creds()
     try:
-        service = build('sheets', 'v4', credentials=creds)
+        service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         sheet = service.spreadsheets()
         response = (
             sheet.values()
