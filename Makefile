@@ -1,6 +1,6 @@
 create_venv:
 ifeq ("$(wildcard ./venv/bin/activate)","")
-	python -m venv venv;
+	python3 -m venv venv;
 endif
 venv_dependencies:
 	. venv/bin/activate; pip install -r requirements.txt;
