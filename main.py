@@ -11,6 +11,8 @@ import key_data
 
 app = FastAPI()
 logger = logging.getLogger('yandex_market')
+with open(config.FILE_SUPPORT_MESSAGE, 'r') as file:
+    SUPPORT_MESSAGE = file.read()
 
 
 @app.get('/products.yml')
@@ -93,9 +95,7 @@ async def order_status(request: Request):
                 _item = {}
                 _item['id'] = item['id']
                 _item['code'] = key
-                _item['slip'] = (
-                    f'Instruction for {item["id"]}'
-                )
+                _item['slip'] = SUPPORT_MESSAGE
                 _item['activate_till'] = (
                     (datetime.today() + timedelta(weeks=2)).strftime('%Y-%m-%d')
                 )
