@@ -25,6 +25,7 @@ async def pruducts_yml(request: Request):
 @app.post('/cart')
 async def cart(request: Request):
     json_data = await request.json()
+    count_products = key_data.get_count_keys()
 
     response = {'cart': {}}
     response['cart']['deliveryCurrency'] = 'RUR'
@@ -52,7 +53,7 @@ async def cart(request: Request):
         _item['feedId'] = item['feedId']
         _item['offerId'] = item['offerId']
         _item['delivery'] = True
-        _item['count'] = item['count']
+        _item['count'] = count_products.get(item['offerId'], 0)
         _item['sellerInn'] = config.MARKET_SELLER_INN
         response['cart']['items'].append(_item)
 
