@@ -1,5 +1,6 @@
 from __future__ import print_function
 import logging.config
+import cachetools.func
 
 import os.path
 from typing import Dict, List
@@ -17,6 +18,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 logger = logging.getLogger('google_sheets')
 
 
+@cachetools.func.ttl_cache(ttl=60)
 def __get_creds():
     creds = None
     if os.path.exists(GOOGLE_TOKEN_FILE_NAME):
@@ -26,6 +28,7 @@ def __get_creds():
     return creds
 
 
+@cachetools.func.ttl_cache(ttl=10)
 def __get_skus_from_sheet() -> list:
     creds = __get_creds()
     headers_sku = {}
