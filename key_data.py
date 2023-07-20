@@ -18,6 +18,10 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 logger = logging.getLogger('google_sheets')
 
 
+class KeysNotEnough(Exception):
+    pass
+
+
 @cachetools.func.ttl_cache(ttl=60)
 def __get_creds():
     creds = None
@@ -142,6 +146,7 @@ def get_keys(sku: str, count: int = 1):
         __update_keys_columns(keys[:-count] + [''] * count, column_name)
         __add_used_keys_columns(result, sku)
         return result
+    raise KeysNotEnough()
 
 
 def get_count_keys() -> Dict:

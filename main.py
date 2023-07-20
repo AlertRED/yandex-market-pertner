@@ -91,7 +91,15 @@ async def order_status(request: Request):
     if status == STATUS_FOR_SEND_ORDER:
         request_data = {'items': []}
         for item in json_data['order']['items']:
-            keys = key_data.get_keys(item['offerId'], item['count'])
+            try:
+                keys = key_data.get_keys(item['offerId'], item['count'])
+            except key_data.KeysNotEnough:
+                logger.info(
+                    f'Заказ {json_data["order"]["id"]} '
+                    f'недостаточно ключей для sku {item["offerId"]}'
+                )
+                await products_not_enough(json_data['order']['id'])
+                return
             for key in keys:
                 _item = {}
                 _item['id'] = item['id']
@@ -121,6 +129,33 @@ async def send_key(order_id: str, request_data):
                 'text': await resp.text(),
             }
             logger.info(f'Заказ {order_id} ключ отправлен {info}')
+
+
+async def products_not_enough(order_id):
+    request_data = {
+        'order': {
+            'status': 'CANCELLED',
+            'substatus': 'SHOP_FAILED',
+        }
+    }
+    headers = {'Authorization': f'Bearer {config.MARKET_ACCESS_TOKEN}'}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.put(
+            url=(
+                f'https://api.partner.market.yandex.ru'
+                f'/campaigns/{config.MARKET_CAMPAIGN_ID}'
+                f'/orders/{order_id}'
+                f'/status'
+            ),
+            json=request_data,
+        ) as resp:
+            info = {
+                'status': resp.status,
+            }
+            logger.info(
+                f'Заказ {order_id} отменен так как '
+                f'его количество не достаточно {info}'
+            )
 
 
 @app.post('/stocks')
