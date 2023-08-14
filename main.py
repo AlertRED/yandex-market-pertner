@@ -1,3 +1,4 @@
+import asyncio
 import logging.config
 import uvicorn
 import aiohttp
@@ -210,6 +211,10 @@ async def buyer_cancellation(request: Request):
                 f'отмена заказа отменена {info}'
             )
 
+
+@app.on_event("startup")
+async def metrics_setup():
+    asyncio.create_task(key_data.run_update_count_keys())
 
 if __name__ == '__main__':
     uvicorn.run(

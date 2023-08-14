@@ -1,9 +1,11 @@
 from __future__ import print_function
 import logging.config
+from threading import Thread
 import cachetools.func
+from asyncio import sleep as asleep
 
 import os.path
-from typing import Dict, List
+from typing import  List
 from datetime import datetime
 from pytz import timezone
 
@@ -16,6 +18,7 @@ from config import GOOGLE_TOKEN_FILE_NAME, GOOGLE_SPREADSHEET_ID
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 logger = logging.getLogger('google_sheets')
+keys_count = {}
 
 
 class KeysNotEnough(Exception):
@@ -149,7 +152,7 @@ def get_keys(sku: str, count: int = 1):
     raise KeysNotEnough()
 
 
-def get_count_keys() -> Dict:
+def __update_keys_count() -> None:
     sku_indexes = {}
     counter = {}
     creds = __get_creds()
@@ -176,14 +179,32 @@ def get_count_keys() -> Dict:
             for i, key in enumerate(keys):
                 if key:
                     counter[sku_indexes[i]] += 1
-
-        return counter
+        global keys_count
+        keys_count = counter
     except HttpError as err:
         logger.error(err)
 
 
+async def run_update_count_keys():
+    while True:
+        thread = Thread(target=__update_keys_count)
+        thread.start()
+        thread.join()
+        await asleep(30)
+
+
+def get_count_keys():
+    return keys_count
+
+
 if __name__ == '__main__':
     # Exampels
+    creds = __get_creds()
+    headers_sku = {}
+    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
+    sheet = service.spreadsheets()
+    a = sheet.sheets()
+    a = 1
 
-    get_count_keys()
-    get_keys('240152903041', 2)
+    # print(get_count_keys())
+    # get_keys('240152903041', 2)
